@@ -211,7 +211,7 @@
                             <h1 class="h3 mb-4 text-gray-800">Entradas</h1>
 
                             <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="dosis_mg" placeholder="Dosis en mg" oninput="calculateResults()">
+                                <input type="number" class="form-control form-control-user" id="dosis_mg" placeholder="Dosis en mg" oninput="updateResults()">
                             </div>
 
                             <div class="form-group row">
@@ -280,6 +280,9 @@
                             
                             <h1 class="h6 text-gray-800">R (Coeficiente de correlacion)</h1>
                             <h1 class="h3 text-gray-800 mt-n2" id="correlacion">0</h1>
+
+                            <h1 class="h6 text-gray-800">Área bajo la curva</h1>
+                            <h1 class="h3 text-gray-800 mt-n2" id="area_bajo">0</h1>
                         </div>
 
                     </div>
@@ -316,7 +319,6 @@
     <script>
         var numberInstances = 0;
         var data_points = [];
-        var dataLog_points = [];
 
         function myFunction(input) {
             
@@ -341,20 +343,21 @@
                 
             }
 
-            calculateResults();
+            updateResults();
         }
 
-        function calculateResults(numDecimals = 5) {
+        function updateResults(numDecimals = 5) {
             var dosis = document.getElementById("dosis_mg").value;
 
-            var result = getSlopeAndIntercept(dataLog_points);
-            var slope = Math.abs(result["slope"]);
-            var intercepto = Number(result["intercept"]);
+            var results = calculateResults();
+            var slope = Math.abs(results["slope"]);
+            var intercepto = Number(results["intercept"]);
             var cpt0 = Math.exp(intercepto);
             var t1_2 = Math.abs(Math.log(0.5)/slope);
             var vol_dis = dosis/cpt0;
             var clarence = slope*vol_dis;
-            var correlacion = Math.abs(result["correlation"]);
+            var correlacion = Math.abs(results["correlation"]);
+            var area = Number(results["area"]);
 
             document.getElementById("constante_eliminacion").innerHTML = isNaN(slope.toFixed(numDecimals) ) ? "0" : slope.toFixed(numDecimals);
             document.getElementById("intercepto").innerHTML = isNaN(intercepto.toFixed(numDecimals) ) ? "0" : intercepto.toFixed(numDecimals);
@@ -363,31 +366,32 @@
             document.getElementById("vol_dis").innerHTML = isNaN(vol_dis.toFixed(numDecimals) ) ? "0" : vol_dis.toFixed(numDecimals);
             document.getElementById("clarence").innerHTML = isNaN(clarence.toFixed(numDecimals) ) ? "0" : clarence.toFixed(numDecimals);
             document.getElementById("correlacion").innerHTML = isNaN(correlacion.toFixed(numDecimals) ) ? "0" : correlacion.toFixed(numDecimals);
+            document.getElementById("area_bajo").innerHTML = isNaN(area.toFixed(numDecimals) ) ? "0" : area.toFixed(numDecimals);
         }
 
-        function getSlopeAndIntercept(dataLog_points) {
-            var x_sum = 0;
-            var y_sum = 0;
-            var x_squared_sum = 0;
-            var y_squared_sum = 0;
-            var x_y_sum = 0;
-            var n = dataLog_points.length;
+        function calculateResults() {
+            // Calculate summations
+            var n = data_points.length;
+            var x_sum = data_points.reduce(function(a, b) { return a + b.x; }, 0);
+            var y_sum = data_points.reduce(function(a, b) { return a + Math.log(b.y); }, 0);
+            var x_squared_sum = data_points.reduce(function(a, b) { return a + b.x * b.x; }, 0);
+            var y_squared_sum = data_points.reduce(function(a, b) { return a + Math.pow(Math.log(b.y),2); }, 0);
+            var x_y_sum = data_points.reduce(function(a, b) { return a + b.x * Math.log(b.y); }, 0);
 
-            for (var i = 0; i < n; i++) {
-                x_sum += Number(dataLog_points[i].x);
-                y_sum += Number(dataLog_points[i].y);
-                x_squared_sum += dataLog_points[i].x * dataLog_points[i].x;
-                y_squared_sum += dataLog_points[i].y * dataLog_points[i].y;
-                x_y_sum += dataLog_points[i].x * dataLog_points[i].y;
-            }
+            // Calculate area under the curve
+            var area_under_curve = data_points.reduce(function(a, b) { 
+                return { 
+                    x: b.x, 
+                    y: b.y, 
+                    area: a.area + (a.y + b.y) / 2 * (b.x - a.x) 
+                }; 
+            }, { x: data_points[0].x, y: data_points[0].y, area: 0 }).area;
 
-            // calculate the slope
+            // Calculate slope
             var slope = (n * x_y_sum - x_sum * y_sum) / (n * x_squared_sum - x_sum * x_sum);
-            slope = slope.toFixed(8);
 
             // calculate the intercept
             var intercept = (y_sum - slope * x_sum) / n;
-            intercept = intercept.toFixed(8);
 
             // calculate the correlation coefficient
             var numerator = n * x_y_sum - x_sum * y_sum;
@@ -395,17 +399,17 @@
 
             var r = numerator / denominator;
 
-            // return the slope and intercept in an object
+            // return the result
             return {
                 slope: slope,
                 intercept: intercept,
-                correlation: r
+                correlation: r,
+                area: area_under_curve
             };
         }
 
         function removeDataPoint(instance){
             data_points.splice(instance, 1);
-            dataLog_points.splice(instance, 1);
             numberInstances--;
         }
 
@@ -429,23 +433,15 @@
 
         function addDataPoint(instance) {
             data_points.push({
-                x: document.getElementById("tiempo"+instance).value,
-                y: document.getElementById("concentracion"+instance).value
-            });
-            dataLog_points.push({
-                x: document.getElementById("tiempo"+instance).value,
-                y: document.getElementById("concentracion"+instance).value
+                x: Number(document.getElementById("tiempo"+instance).value),
+                y: Number(document.getElementById("concentracion"+instance).value)
             });
         }
 
         function updateDataPoint(instance){
             data_points[instance] = {
-                x: document.getElementById("tiempo"+instance).value,
-                y: document.getElementById("concentracion"+instance).value
-            };
-            dataLog_points[instance] = {
-                x: document.getElementById("tiempo"+instance).value,
-                y: Math.log(document.getElementById("concentracion"+instance).value)
+                x: Number(document.getElementById("tiempo"+instance).value),
+                y: Number(document.getElementById("concentracion"+instance).value)
             };
         }
 
@@ -456,7 +452,12 @@
             myLineChart.update();
 
             myLogChart.data.datasets.forEach((dataset) => {
-                dataset.data = dataLog_points;
+                dataset.data = data_points.map(function(point) {
+                    return {
+                        x: point.x,
+                        y: Math.log(point.y)
+                    };
+                });
             });
             myLogChart.update();
         }
