@@ -408,15 +408,6 @@
             var y_squared_sum = data_points.reduce(function(a, b) { return a + Math.pow(Math.log(b.y),2); }, 0);
             var x_y_sum = data_points.reduce(function(a, b) { return a + b.x * Math.log(b.y); }, 0);
 
-            // Calculate area under the curve
-            var area_under_curve = data_points.reduce(function(a, b) {
-                return { 
-                    x: b.x, 
-                    y: b.y, 
-                    area: a.area + (a.y + b.y) / 2 * (b.x - a.x) 
-                }; 
-            }, { x: 0.25 - data_points[0].x, y: 0, area: 0 }).area;
-
             // Calculate slope
             var slope = (n * x_y_sum - x_sum * y_sum) / (n * x_squared_sum - x_sum * x_sum);
 
@@ -428,6 +419,15 @@
             var denominator = Math.sqrt((n * x_squared_sum - x_sum * x_sum) * (n * y_squared_sum - y_sum * y_sum));
 
             var r = numerator / denominator;
+
+            // Calculate area under the curve
+            var area_under_curve = data_points.reduce(function(a, b) {
+                return { 
+                    x: b.x, 
+                    y: b.y, 
+                    area: a.area + (a.y + b.y) / 2 * (b.x - a.x) 
+                }; 
+            }, { x: 0, y: Math.exp(intercept), area: 0 }).area;
 
             // return the result
             return {
