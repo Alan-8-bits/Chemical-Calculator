@@ -214,7 +214,7 @@
                             <h1 class="h3 mb-4 text-gray-800">Entradas</h1>
 
                             <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="dosis_mg" placeholder="Dosis en mg" oninput="updateResults()">
+                                <input type="number" class="form-control form-control-user" id="dosis_mg" placeholder="Dosis" oninput="updateResults()">
                             </div>
 
                             <div class="form-group row">
@@ -295,6 +295,63 @@
                 </div>
 
                 <div class="container-fluid" id="inferences-page">
+                    <div class="text-center">
+                        <h1 class="h1 text-gray-800 mt-n2">Motor de Inferencia</h1><br>
+                        <h1 class="h4 text-gray-800 mt-n4 mb-4">Ingresa los valores que se conocen y presiona el boton para intentar inferir los faltantes.</h1>
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col"> 
+                            <h1 class="h5 text-gray-800">Intercepto</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_intercepto">
+                            </div>
+
+                            <!-- <svg class="mt-n3" width="100%" height="100"><line id="intercepto_cpt0" x1="50%" y1="0" x2="50%" y2="100" stroke="grey" stroke-width="5"/></svg> -->
+                            
+                            <h1 class="h5 text-gray-800">CPT0 (Concentracion plasmatica a tiempo 0)</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_cpt0">
+                            </div>
+                            
+                            <!-- <svg class="mt-n3" width="100%" height="100"><line id="cpt0_dosis" x1="50%" y1="0" x2="50%" y2="100" stroke="grey" stroke-width="5"/></svg> -->
+                            
+                            <h1 class="h5 text-gray-800">Dosis</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_dosis">
+                            </div>
+                        </div>
+
+                        <div class="col"> 
+                            <h1 class="h5 text-gray-800">Volumen de distribucion</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_vol_dis">
+                            </div>
+                        </div>
+
+                        <div class="col"> 
+                            <h1 class="h5 text-gray-800">T1/2 (Tiempo de vida media)</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_t1_2">
+                            </div>
+
+                            <h1 class="h5 text-gray-800">Pendiente</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_slope">
+                            </div>
+
+                            <h1 class="h5 text-gray-800">Clarence renal</h1>
+                            <div class="form-group">
+                                <input type="number" class="form-control form-control-user" id="inference_clarence">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row justify-content-center mb-4">
+                        <button class="btn btn-primary" onclick="inferMissingValues()">Calcular Faltantes</a>
+                    </div>
 
                 </div>
                 <!-- /.container-fluid -->
@@ -344,6 +401,82 @@
                 
             });
         });
+
+        var allValues = {
+            'inference_intercepto': [{
+                "isPossible":"$('#inference_cpt0').val() != ''",
+                "formula":"Math.log($('#inference_cpt0').val())"
+            }],
+            'inference_cpt0': [{
+                    "isPossible":"$('#inference_intercepto').val() != ''",
+                    "formula":"Math.exp($('#inference_intercepto').val())"
+                },{
+                    "isPossible":"$('#inference_dosis').val() != '' && $('#inference_vol_dis').val() != ''",
+                    "formula":"$('#inference_dosis').val() / $('#inference_vol_dis').val()"
+            }],
+            'inference_dosis': [{
+                "isPossible":"$('#inference_cpt0').val() != '' && $('#inference_vol_dis').val() != ''",
+                "formula":"$('#inference_cpt0').val() * $('#inference_vol_dis').val()"
+            }],
+            'inference_vol_dis': [{
+                    "isPossible":"$('#inference_cpt0').val() != '' && $('#inference_dosis').val() != ''",
+                    "formula":"$('#inference_dosis').val() / $('#inference_cpt0').val()"
+                },{
+                    "isPossible":"$('#inference_clarence').val() != '' && $('#inference_slope').val() != ''",
+                    "formula":"$('#inference_clarence').val() / $('#inference_slope').val()"
+            }],
+            'inference_t1_2': [{
+                "isPossible":"$('#inference_slope').val() != ''",
+                "formula":"Math.abs(Math.log(0.5)/$('#inference_slope').val())"
+            }],
+            'inference_slope': [{
+                    "isPossible":"$('#inference_clarence').val() != '' && $('#inference_vol_dis').val() != ''",
+                    "formula":"$('#inference_clarence').val() / $('#inference_vol_dis').val()"
+                },{
+                    "isPossible":"$('#inference_t1_2').val() != ''",
+                    "formula":"Math.abs(Math.log(0.5) / $('#inference_t1_2').val())"
+            }],
+            'inference_clarence': [{
+                "isPossible":"$('#inference_slope').val() != '' && $('#inference_vol_dis').val() != ''",
+                "formula":"$('#inference_slope').val() * $('#inference_vol_dis').val()"
+            }]
+        }; 
+
+        function inferMissingValues(numDecimals = 5) {
+            var missingValues = getMissingValues();
+            var wasInfered = false;
+            for (var i = 0; i < missingValues.length; i++) {
+                var inference = infer(missingValues[i]);
+                if (inference) {
+                    $('#' + missingValues[i]).val(inference.toFixed(numDecimals));
+                    wasInfered = true;
+                }
+            }
+            if (wasInfered) {
+                inferMissingValues();
+            }
+            
+        }
+
+        function infer(missingValue) {
+            var possibleInfer = allValues[missingValue];
+            for (var i = 0; i < possibleInfer.length; i++) {
+                if (eval(possibleInfer[i]['isPossible'])) {
+                    return eval(possibleInfer[i]['formula']);
+                }
+            }
+            return null;
+        }
+
+        function getMissingValues() {
+            var missingValues = [];
+            for (var key in allValues) {
+                if ($('#' + key).val() == '') {
+                    missingValues.push(key);
+                }
+            }
+            return missingValues;
+        }
     </script>
 
     <script>
