@@ -302,51 +302,92 @@
 
                     <div class="row">
 
-                        <div class="col"> 
-                            <h1 class="h5 text-gray-800">Intercepto</h1>
-                            <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_intercepto">
+                        <div class="col-3">
+                            <div class="form-group row">
+                                <label for="inference_intercepto" class="col-3 col-form-label text-right">Intercepto</label>
+                                <div class="col-9">
+                                    <input type="number" class="form-control form-control-user" id="inference_intercepto" onfocus="colorEdges([['intercepto_cpt0']])" onblur="resetColorEdges(['intercepto_cpt0'])">
+                                </div>
                             </div>
+                            <svg class="mt-n3" width="100%" height="200"><line id="intercepto_cpt0" x1="62%" y1="0" x2="62%" y2="100%" stroke="grey" stroke-width="2"/></svg>
+                        </div>
 
-                            <!-- <svg class="mt-n3" width="100%" height="100"><line id="intercepto_cpt0" x1="50%" y1="0" x2="50%" y2="100" stroke="grey" stroke-width="5"/></svg> -->
-                            
-                            <h1 class="h5 text-gray-800">CPT0 (Concentracion plasmatica a tiempo 0)</h1>
-                            <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_cpt0">
-                            </div>
-                            
-                            <!-- <svg class="mt-n3" width="100%" height="100"><line id="cpt0_dosis" x1="50%" y1="0" x2="50%" y2="100" stroke="grey" stroke-width="5"/></svg> -->
-                            
-                            <h1 class="h5 text-gray-800">Dosis</h1>
-                            <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_dosis">
-                            </div>
+                        <div class="col-2">
                         </div>
 
                         <div class="col"> 
-                            <h1 class="h5 text-gray-800">Volumen de distribucion</h1>
-                            <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_vol_dis">
+                        </div>
+
+                        <div class="col-2">
+                        </div>
+
+                        <div class="col-3">
+                            <div class="form-group row">
+                                <div class="col-9">
+                                    <input type="number" class="form-control form-control-user" id="inference_t1_2" onfocus="colorEdges([['t1_2_slope']])" onblur="resetColorEdges(['t1_2_slope'])">
+                                </div>
+                                <label for="inference_t1_2" class="col-3 col-form-label text-left">T1/2</label>
+                            </div>
+
+                            <svg class="mt-n3" width="100%" height="200"><line id="t1_2_slope" x1="37%" y1="0" x2="37%" y2="100%" stroke="grey" stroke-width="2"/></svg>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-3">
+                            <!-- <h1 class="h5 text-gray-800">CPT0 ()</h1> -->
+                            <div class="form-group row">
+                                <label for="inference_cpt0" class="col-3 col-form-label text-right">CPT0</label>
+                                <div class="col-9">
+                                    <input type="number" class="form-control form-control-user" id="inference_cpt0" onfocus="colorEdges([['intercepto_cpt0'],['cpt0_dosis','cpt0_vol_dis']])" onblur="resetColorEdges(['intercepto_cpt0','cpt0_dosis','cpt0_vol_dis'])">
+                                </div>
+                            </div>
+                            
+                            <svg class="mt-n3" width="100%" height="200"><line id="cpt0_dosis" x1="62%" y1="0" x2="62%" y2="100%" stroke="grey" stroke-width="2"/></svg>
+                            
+                            <div class="form-group row">
+                                <label for="inference_dosis" class="col-3 col-form-label text-right">Dosis</label>
+                                <div class="col-9">
+                                    <input type="number" class="form-control form-control-user" id="inference_dosis" onfocus="colorEdges([['cpt0_dosis','dosis_vol_dis']])" onblur="resetColorEdges(['cpt0_dosis','dosis_vol_dis'])">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="col"> 
-                            <h1 class="h5 text-gray-800">T1/2 (Tiempo de vida media)</h1>
-                            <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_t1_2">
-                            </div>
+                        <div class="col-2 mx-n4">
+                            <svg width="100%" height="53%"><line id="cpt0_vol_dis" x1="0" y1="13%" x2="100%" y2="100%" stroke="grey" stroke-width="2"/></svg>
+                            <svg width="100%" height="47%"><line id="dosis_vol_dis" x1="0" y1="73%" x2="100%" y2="0" stroke="grey" stroke-width="2"/></svg>
+                        </div>
 
-                            <h1 class="h5 text-gray-800">Pendiente</h1>
+                        <div class="col my-auto">
+                            <h1 class="h5 text-gray-800 text-center">Volumen de distribucion</h1>
                             <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_slope">
-                            </div>
-
-                            <h1 class="h5 text-gray-800">Clarence renal</h1>
-                            <div class="form-group">
-                                <input type="number" class="form-control form-control-user" id="inference_clarence">
+                                <input type="number" class="form-control form-control-user" id="inference_vol_dis" onfocus="colorEdges([['cpt0_vol_dis','dosis_vol_dis'],['vol_dis_slope','vol_dis_clarence']])" onblur="resetColorEdges(['cpt0_vol_dis','dosis_vol_dis','vol_dis_slope','vol_dis_clarence'])">
                             </div>
                         </div>
 
+                        <div class="col-2 mx-n4">
+                            <svg width="100%" height="53%"><line id="vol_dis_slope" x1="0" y1="100%" x2="100%" y2="13%" stroke="grey" stroke-width="2"/></svg>
+                            <svg width="100%" height="47%"><line id="vol_dis_clarence" x1="0" y1="0" x2="100%" y2="73%" stroke="grey" stroke-width="2"/></svg>
+                        </div>
+
+                        <div class="col-3">
+                            <div class="form-group row">
+                                <div class="col-9">
+                                    <input type="number" class="form-control form-control-user" id="inference_slope" onfocus="colorEdges([['t1_2_slope'],['vol_dis_slope','slope_clarence']])" onblur="resetColorEdges(['t1_2_slope','vol_dis_slope','slope_clarence'])">
+                                </div>
+                                <label for="inference_slope" class="col-3 col-form-label text-left">Pendiente</label>
+                            </div>
+
+                            <svg class="mt-n3" width="100%" height="200"><line id="slope_clarence" x1="37%" y1="0" x2="37%" y2="100%" stroke="grey" stroke-width="2"/></svg>
+
+                            <div class="form-group row">
+                                <div class="col-9">
+                                    <input type="number" class="form-control form-control-user" id="inference_clarence" onfocus="colorEdges([['vol_dis_clarence','slope_clarence']])" onblur="resetColorEdges(['vol_dis_clarence','slope_clarence'])">
+                                </div>
+                                <label for="inference_clarence" class="col-3 col-form-label text-left">Clarence</label>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row justify-content-center mb-4">
@@ -476,6 +517,25 @@
                 }
             }
             return missingValues;
+        }
+
+        var edgeColors = {
+            '0': '#2e59d9',
+            '1': '#F9D923'
+        };
+
+        function colorEdges(edges) {
+            edges.forEach(function(source,index) {
+                source.forEach(function(edge) {
+                    $('#' + edge).attr('stroke', edgeColors[index]).attr('stroke-width', 5);
+                });
+            });
+        }
+
+        function resetColorEdges(edges) {
+            edges.forEach(function(edge) {
+                $('#' + edge).attr('stroke', 'grey').attr('stroke-width', 2);
+            });
         }
     </script>
 
