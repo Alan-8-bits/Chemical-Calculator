@@ -779,6 +779,7 @@
         }
 
         function calculateResults(pointsToCalculate = getPoints()) {
+            if(!pointsToCalculate.length) return { slope: 0, intercept: 0, correlation: 0, area: 0};
             // Calculate summations
             var n = pointsToCalculate.length;
             var x_sum = pointsToCalculate.reduce(function(a, b) { return a + b.x; }, 0);
