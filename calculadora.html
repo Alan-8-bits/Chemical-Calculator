@@ -233,8 +233,13 @@
                                 <input type="number" class="form-control form-control-user" id="sliceSize" placeholder="Cantidad Extrapolacion" oninput="updateOverallState()">
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group row">
+                                <div class="col">
                                 <input type="number" class="form-control form-control-user" id="dosis_mg" placeholder="Dosis" oninput="updateOverallState()">
+                            </div>
+                                <div class="col" id="bioavailabilityContainer" style="display: none;">
+                                    <input type="number" class="form-control form-control-user" id="bioavailabilityInput" placeholder="Biodisponibilidad" oninput="updateOverallState()">
+                                </div>
                             </div>
 
                             <div class="form-group row">
@@ -648,18 +653,18 @@
             updateResults();
             }
 
-        function getPoints() {
+        function getPoints(retrieveFullArray = false) {
             const methodToUse = $("#dropdownMethod").data('method');
             const sliceSize = $("#sliceSize").val();
             switch (methodToUse) {
                 case 'regularMethodId':
-                    return data_points;
+                    return retrieveFullArray ? data_points : data_points.slice(sliceSize);
                 case 'sigmaMethodId':
-                    return sigma_points.slice(0, -1);
+                    return retrieveFullArray ? sigma_points : sigma_points.slice(0, -1);
                 case 'extrapolationMethodId':
-                    return data_points.slice(sliceSize);
+                    return retrieveFullArray ? data_points : data_points.slice(sliceSize);
                 case 'abcMethodId':
-                    return data_points.slice(sliceSize);
+                    return retrieveFullArray ? data_points : data_points.slice(sliceSize);
                 default:
                     return data_points;
             }
@@ -703,18 +708,19 @@
                 const k12 = extResults["slope"]+results["slope"]-k10-k21;
                 const clarenceT = vDarea*ABC*results["slope"];
 
-                $('#abcExtrapolation').html( isNaN(ABC.toFixed(numDecimals)) ? "0" : ABC.toFixed(numDecimals) );
+                $('#abcExtrapolation').html( isNaN(ABC.toFixed(numDecimals)) ? "0" : Math.abs(ABC.toFixed(numDecimals)) );
                 $('#vol_dis').html( isNaN(vDarea.toFixed(numDecimals)) ? "0" : vDarea.toFixed(numDecimals) );
                 $('#cpt0').html( isNaN(cp0.toFixed(numDecimals)) ? "0" : cp0.toFixed(numDecimals) );
-                $('#k21Extrapolation').html( isNaN(k21.toFixed(numDecimals)) ? "0" : k21.toFixed(numDecimals) );
-                $('#k10Extrapolation').html( isNaN(k10.toFixed(numDecimals)) ? "0" : k10.toFixed(numDecimals) );
-                $('#k12Extrapolation').html( isNaN(k12.toFixed(numDecimals)) ? "0" : k12.toFixed(numDecimals) );
+                $('#k21Extrapolation').html( isNaN(k21.toFixed(numDecimals)) ? "0" : Math.abs(k21.toFixed(numDecimals)) );
+                $('#k10Extrapolation').html( isNaN(k10.toFixed(numDecimals)) ? "0" : Math.abs(k10.toFixed(numDecimals)) );
+                $('#k12Extrapolation').html( isNaN(k12.toFixed(numDecimals)) ? "0" : Math.abs(k12.toFixed(numDecimals)) );
                 $('#clarence').html( isNaN(clarenceT.toFixed(numDecimals)) ? "0" : clarenceT.toFixed(numDecimals) );
                 
             }
 
             if ($("#dropdownMethod").data('method') == 'abcMethodId' && absorption_points.length) {
                 var absResults = calculateResults(absorption_points);
+                const bioavailability = Number($('#bioavailabilityInput').val())*dosis;
 
                 const deltaAbc = data_points.reduce(function(a, b) {
                     return { 
@@ -723,7 +729,7 @@
                         area: a.area + (a.y + b.y) / 2 * (b.x - a.x) 
                     }; 
                 }, { x: 0, y: 0, area: 0 }).area;
-                const eliminationVdF = dosis/deltaAbc;
+                const eliminationVdF = bioavailability/deltaAbc;
                 const eliminationCl = eliminationVdF*slope;
                 const absT_inf = data_points.at(-1).y/slope;
                 const abs0_t = deltaAbc;
@@ -732,7 +738,7 @@
                 const absKa = Math.abs(absResults["slope"]);
                 const abst1_2 = Math.abs(Math.log(0.5)/Math.abs(absResults["slope"]));
                 const tMax = Math.log(absKa/slope)/(absKa-slope);
-                const cpMax = (dosis/eliminationVdF)*Math.exp(results["slope"]*tMax);
+                const cpMax = (bioavailability/eliminationVdF)*Math.exp(results["slope"]*tMax);
 
                 $('#eliminationVdF').html( isNaN(eliminationVdF.toFixed(numDecimals)) ? "0" : eliminationVdF.toFixed(numDecimals) );
                 $('#eliminationCl').html( isNaN(eliminationCl.toFixed(numDecimals)) ? "0" : eliminationCl.toFixed(numDecimals) );
@@ -848,7 +854,7 @@
             };
         }
 
-        function updateCharts(pointsToDisplay = getPoints()) {
+        function updateCharts(pointsToDisplay = getPoints(true)) {
             myLineChart.data.datasets.forEach((dataset) => {
                 dataset.data = pointsToDisplay;
             });
@@ -920,6 +926,7 @@
                     $('#extrapolationIndicators').hide();
                     $('#abcIndicators').hide();
                     $('#sliceSizeContainer').hide();
+                    $('#bioavailabilityContainer').hide();
                     $('#regularIndicators').show();
                     break;
                 case 'sigmaMethodId':
@@ -927,6 +934,7 @@
                     $('#extrapolationIndicators').hide();
                     $('#abcIndicators').hide();
                     $('#sliceSizeContainer').hide();
+                    $('#bioavailabilityContainer').hide();
                     $('#regularIndicators').hide();
                     break;
                 case 'extrapolationMethodId':
@@ -934,6 +942,7 @@
                     $('#extrapolationIndicators').show();
                     $('#abcIndicators').hide();
                     $('#regularIndicators').show();
+                    $('#bioavailabilityContainer').hide();
                     $('#sliceSize').attr("placeholder", 'Cantidad Extrapolacion');
                     $('#sliceSizeContainer').show();
                     break;
@@ -942,6 +951,7 @@
                     $('#regularIndicators').hide();
                     $('#extrapolationIndicators').hide();
                     $('#abcIndicators').show();
+                    $('#bioavailabilityContainer').show();
                     $('#sliceSize').attr("placeholder", 'Cantidad Absorcion');
                     $('#sliceSizeContainer').show();
                     break;
