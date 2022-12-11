@@ -658,11 +658,10 @@
             const sliceSize = $("#sliceSize").val();
             switch (methodToUse) {
                 case 'regularMethodId':
-                    return retrieveFullArray ? data_points : data_points.slice(sliceSize);
+                    return data_points;
                 case 'sigmaMethodId':
                     return retrieveFullArray ? sigma_points : sigma_points.slice(0, -1);
                 case 'extrapolationMethodId':
-                    return retrieveFullArray ? data_points : data_points.slice(sliceSize);
                 case 'abcMethodId':
                     return retrieveFullArray ? data_points : data_points.slice(sliceSize);
                 default:
@@ -670,58 +669,68 @@
             }
         }
 
-        function updateResults(numDecimals = 5) {
-            var dosis = document.getElementById("dosis_mg").value;
+        function assignValuesToDOM(valObj) {
+            for (const [domId, value] of Object.entries(valObj)) {
+                $('#'+domId).html( formatValueToDisplay(value) );
+            }
+        }
 
+        function formatValueToDisplay(val, numDecimals = 5) {
+            return isNaN(val.toFixed(numDecimals) ) ? "0" : val.toFixed(numDecimals)
+        }
+
+        function updateResults() {
+            var dosis = $('#dosis_mg').val();
             var results = calculateResults();
-            var slope = Math.abs(results["slope"]);
-            var intercepto = Number(results["intercept"]);
-            var cpt0 = Math.exp(intercepto); // intercepto = Math.log(cpt0)
-            var t1_2 = Math.abs(Math.log(0.5)/slope); // slope = Math.abs(Math.log(0.5) / t1_2)
-            var vol_dis = dosis/cpt0;// dosis = vol_dis * cpt0, cpt0 = dosis / vol_dis
-            var clarence = slope*vol_dis;// slope = clarence / vol_dis, vol_dis = clarence / slope
-            var correlacion = Math.abs(results["correlation"]);
-            var area = Number(results["area"]);
-            const excretion = dosis*(1-Math.exp(-slope*t1_2));
-            const excretionRate = dosis/excretion;
 
-            document.getElementById("constante_eliminacion").innerHTML = isNaN(slope.toFixed(numDecimals) ) ? "0" : slope.toFixed(numDecimals);
-            document.getElementById("intercepto").innerHTML = isNaN(intercepto.toFixed(numDecimals) ) ? "0" : intercepto.toFixed(numDecimals);
-            document.getElementById("cpt0").innerHTML = isNaN(cpt0.toFixed(numDecimals) ) ? "0" : cpt0.toFixed(numDecimals);
-            document.getElementById("t1_2").innerHTML = isNaN(t1_2.toFixed(numDecimals) ) ? "0" : t1_2.toFixed(numDecimals);
-            document.getElementById("vol_dis").innerHTML = isNaN(vol_dis.toFixed(numDecimals) ) ? "0" : vol_dis.toFixed(numDecimals);
-            document.getElementById("clarence").innerHTML = isNaN(clarence.toFixed(numDecimals) ) ? "0" : clarence.toFixed(numDecimals);
-            document.getElementById("correlacion").innerHTML = isNaN(correlacion.toFixed(numDecimals) ) ? "0" : correlacion.toFixed(numDecimals);
-            document.getElementById("area_bajo").innerHTML = isNaN(area.toFixed(numDecimals) ) ? "0" : area.toFixed(numDecimals);
-            $('#excretion').html( isNaN(excretion.toFixed(numDecimals)) ? "0" : excretion.toFixed(numDecimals) );
-            $('#excretionRate').html( isNaN(excretionRate.toFixed(numDecimals)) ? "0" : excretionRate.toFixed(numDecimals) );
+            const resultsObj = {
+                "constante_eliminacion" : Math.abs(results["slope"]),
+                "intercepto" : Number(results["intercept"]),
+                "correlacion" : Math.abs(results["correlation"]),
+                "area_bajo" : Number(results["area"]),
+            };
+
+            resultsObj.cpt0 = Math.exp(resultsObj.intercepto); // intercepto = Math.log(cpt0)
+            resultsObj.t1_2 = Math.abs(Math.log(0.5)/resultsObj.constante_eliminacion); // slope = Math.abs(Math.log(0.5) / t1_2)
+            resultsObj.vol_dis = dosis/resultsObj.cpt0;// dosis = vol_dis * cpt0, cpt0 = dosis / vol_dis
+            resultsObj.clarence = resultsObj.constante_eliminacion*resultsObj.vol_dis;// slope = clarence / vol_dis, vol_dis = clarence / slope
+            resultsObj.excretion = dosis*(1-Math.exp(-resultsObj.constante_eliminacion*resultsObj.t1_2));
+            resultsObj.excretionRate = dosis/resultsObj.excretion;
 
             if ($("#dropdownMethod").data('method') == 'extrapolationMethodId' && extrapolation_points.length) {
-                var extResults = calculateResults(extrapolation_points);
-
-                const expIntercept = Math.exp(Number(extResults["intercept"]));
-                const ABC = expIntercept/extResults["slope"] + cpt0/results["slope"];
-                const vDarea = 20/(results["slope"]*ABC);
-                const cp0 = expIntercept+cpt0;
-                const k21 = (expIntercept*results["slope"]+cpt0*extResults["slope"])/cp0;
-                const k10 = (extResults["slope"]*results["slope"])/k21;
-                const k12 = extResults["slope"]+results["slope"]-k10-k21;
-                const clarenceT = vDarea*ABC*results["slope"];
-
-                $('#abcExtrapolation').html( isNaN(ABC.toFixed(numDecimals)) ? "0" : Math.abs(ABC.toFixed(numDecimals)) );
-                $('#vol_dis').html( isNaN(vDarea.toFixed(numDecimals)) ? "0" : vDarea.toFixed(numDecimals) );
-                $('#cpt0').html( isNaN(cp0.toFixed(numDecimals)) ? "0" : cp0.toFixed(numDecimals) );
-                $('#k21Extrapolation').html( isNaN(k21.toFixed(numDecimals)) ? "0" : Math.abs(k21.toFixed(numDecimals)) );
-                $('#k10Extrapolation').html( isNaN(k10.toFixed(numDecimals)) ? "0" : Math.abs(k10.toFixed(numDecimals)) );
-                $('#k12Extrapolation').html( isNaN(k12.toFixed(numDecimals)) ? "0" : Math.abs(k12.toFixed(numDecimals)) );
-                $('#clarence').html( isNaN(clarenceT.toFixed(numDecimals)) ? "0" : clarenceT.toFixed(numDecimals) );
-                
+                addMADCresults(resultsObj,results);
             }
 
             if ($("#dropdownMethod").data('method') == 'abcMethodId' && absorption_points.length) {
-                var absResults = calculateResults(absorption_points);
-                const bioavailability = Number($('#bioavailabilityInput').val())*dosis;
+                addOralResults(resultsObj,results);
+            }
 
+            assignValuesToDOM(resultsObj);
+        }
+
+        function addMADCresults(resultsObj,results) {
+                var extResults = calculateResults(extrapolation_points);
+                const expIntercept = Math.exp(Number(extResults["intercept"]));
+            const prevCpt0 = resultsObj.cpt0;
+
+            resultsObj.abcExtrapolation = expIntercept/extResults["slope"] + prevCpt0/results["slope"];
+            resultsObj.vol_dis = 20/(results["slope"]*resultsObj.abcExtrapolation);
+            resultsObj.cpt0 = expIntercept+prevCpt0;
+            resultsObj.k21Extrapolation = (expIntercept*results["slope"]+prevCpt0*extResults["slope"])/resultsObj.cpt0;
+            resultsObj.k10Extrapolation = (extResults["slope"]*results["slope"])/resultsObj.k21Extrapolation;
+            resultsObj.k12Extrapolation = extResults["slope"]+results["slope"]-resultsObj.k10Extrapolation-resultsObj.k21Extrapolation;
+            resultsObj.clarence = resultsObj.vol_dis*resultsObj.abcExtrapolation*results["slope"];
+                
+            // Make values absolute for display
+            resultsObj.abcExtrapolation = Math.abs(resultsObj.abcExtrapolation);
+            resultsObj.k21Extrapolation = Math.abs(resultsObj.k21Extrapolation);
+            resultsObj.k10Extrapolation = Math.abs(resultsObj.k10Extrapolation);
+            resultsObj.k12Extrapolation = Math.abs(resultsObj.k12Extrapolation);
+            }
+
+        function addOralResults(resultsObj,results) {
+                var absResults = calculateResults(absorption_points);
+            const bioavailability = Number($('#bioavailabilityInput').val())*$('#dosis_mg').val();
                 const deltaAbc = data_points.reduce(function(a, b) {
                     return { 
                         x: b.x, 
@@ -729,27 +738,16 @@
                         area: a.area + (a.y + b.y) / 2 * (b.x - a.x) 
                     }; 
                 }, { x: 0, y: 0, area: 0 }).area;
-                const eliminationVdF = bioavailability/deltaAbc;
-                const eliminationCl = eliminationVdF*slope;
-                const absT_inf = data_points.at(-1).y/slope;
-                const abs0_t = deltaAbc;
-                const abs0_inf = absT_inf+deltaAbc;
 
-                const absKa = Math.abs(absResults["slope"]);
-                const abst1_2 = Math.abs(Math.log(0.5)/Math.abs(absResults["slope"]));
-                const tMax = Math.log(absKa/slope)/(absKa-slope);
-                const cpMax = (bioavailability/eliminationVdF)*Math.exp(results["slope"]*tMax);
-
-                $('#eliminationVdF').html( isNaN(eliminationVdF.toFixed(numDecimals)) ? "0" : eliminationVdF.toFixed(numDecimals) );
-                $('#eliminationCl').html( isNaN(eliminationCl.toFixed(numDecimals)) ? "0" : eliminationCl.toFixed(numDecimals) );
-                $('#eliminationT_inf').html( isNaN(absT_inf.toFixed(numDecimals)) ? "0" : absT_inf.toFixed(numDecimals) );
-                $('#elimination0_t').html( isNaN(abs0_t.toFixed(numDecimals)) ? "0" : abs0_t.toFixed(numDecimals) );
-                $('#elimination0_inf').html( isNaN(abs0_inf.toFixed(numDecimals)) ? "0" : abs0_inf.toFixed(numDecimals) );
-                $('#absorptionCpMax').html( isNaN(cpMax.toFixed(numDecimals)) ? "0" : cpMax.toFixed(numDecimals) );
-                $('#absorptionTMax').html( isNaN(tMax.toFixed(numDecimals)) ? "0" : tMax.toFixed(numDecimals) );
-                $('#absorptionKa').html( isNaN(absKa.toFixed(numDecimals)) ? "0" : absKa.toFixed(numDecimals) );
-                $('#absorptionT1_2').html( isNaN(abst1_2.toFixed(numDecimals)) ? "0" : abst1_2.toFixed(numDecimals) );
-            }
+            resultsObj.eliminationVdF = bioavailability/deltaAbc;
+            resultsObj.eliminationCl = resultsObj.eliminationVdF*resultsObj.constante_eliminacion;
+            resultsObj.eliminationT_inf = data_points.at(-1).y/resultsObj.constante_eliminacion;
+            resultsObj.elimination0_t = deltaAbc;
+            resultsObj.elimination0_inf = resultsObj.eliminationT_inf+deltaAbc;
+            resultsObj.absorptionKa = Math.abs(absResults["slope"]);
+            resultsObj.absorptionTMax = Math.log(resultsObj.absorptionKa/resultsObj.constante_eliminacion)/(resultsObj.absorptionKa-resultsObj.constante_eliminacion);
+            resultsObj.absorptionCpMax = (bioavailability/resultsObj.eliminationVdF)*Math.exp(results["slope"]*resultsObj.absorptionTMax);
+            resultsObj.absorptionT1_2 = Math.abs(Math.log(0.5)/Math.abs(absResults["slope"]));
         }
 
         function syncAllPoints() {
